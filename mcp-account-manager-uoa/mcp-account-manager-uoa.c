@@ -35,13 +35,12 @@
 #include <string.h>
 #include <ctype.h>
 
+#define ACCOUNTS_SSO_PROVIDER "im.telepathy.Account.Storage.AccountsSSO"
 
-#define EMPATHY_UOA_PROVIDER "im.telepathy.Account.Storage.UOA"
-
-#define PLUGIN_NAME "uoa"
+#define PLUGIN_NAME "accounts-sso"
 #define PLUGIN_PRIORITY (MCP_ACCOUNT_STORAGE_PLUGIN_PRIO_KEYRING + 10)
-#define PLUGIN_DESCRIPTION "Provide Telepathy Accounts from UOA via libaccounts-glib"
-#define PLUGIN_PROVIDER EMPATHY_UOA_PROVIDER
+#define PLUGIN_DESCRIPTION "Provide Telepathy Accounts from Accounts-SSO via libaccounts-glib"
+#define PLUGIN_PROVIDER ACCOUNTS_SSO_PROVIDER
 
 #define DEBUG g_debug
 
@@ -223,7 +222,7 @@ _service_enabled_cb (AgAccountService *service,
     }
   else
     {
-      DEBUG ("UOA account %s toggled: %s", account_name,
+      DEBUG ("Accounts SSO: account %s toggled: %s", account_name,
           enabled ? "enabled" : "disabled");
 
       /* FIXME: Should this update the username from signon credentials first,
@@ -243,7 +242,7 @@ _service_changed_cb (AgAccountService *service,
   if (!self->priv->ready || account_name == NULL)
     return;
 
-  DEBUG ("UOA account %s changed", account_name);
+  DEBUG ("Accounts SSO: account %s changed", account_name);
 
   /* FIXME: Should check signon credentials for changed username */
   /* FIXME: Could use ag_account_service_get_changed_fields()
@@ -260,7 +259,7 @@ _account_stored_cb (AgAccount *account,
 {
   if (error != NULL)
     {
-      DEBUG ("Error storing UOA account '%s': %s",
+      DEBUG ("Error storing Accounts SSO account '%s': %s",
           ag_account_get_display_name (account),
           error->message);
     }
@@ -271,7 +270,7 @@ _add_service (McpAccountManagerUoa *self,
     AgAccountService *service,
     const gchar *account_name)
 {
-  DEBUG ("UOA account %s added", account_name);
+  DEBUG ("Accounts SSO: account %s added", account_name);
 
   if (g_hash_table_contains (self->priv->accounts, account_name))
     {
@@ -298,7 +297,7 @@ _account_create(McpAccountManagerUoa *self, AgAccountService *service)
 
   if (tp_str_empty (cm_name) || tp_str_empty (protocol_name))
     {
-      g_debug ("UOA _account_create missing manager/protocol for new account %u, ignoring", account->id);
+      g_debug ("Accounts SSO: _account_create missing manager/protocol for new account %u, ignoring", account->id);
       g_free (cm_name);
       g_free (protocol_name);
       return;
@@ -321,7 +320,7 @@ _account_create(McpAccountManagerUoa *self, AgAccountService *service)
   _service_set_tp_account_name (service, account_name);
   ag_account_store (account, _account_stored_cb, self);
 
-  g_debug("UOA _account_create: %s", account_name);
+  g_debug("Accounts SSO: _account_create: %s", account_name);
 
   if (_add_service (self, service, account_name))
       g_signal_emit_by_name (self, "created", account_name);
@@ -348,7 +347,7 @@ _account_created_signon_cb(SignonIdentity *signon,
   AccountCreateData *data = (AccountCreateData*) user_data;
   gchar *username = g_strdup (signon_identity_info_get_username (info));
 
-  g_debug("UOA got account signon info response");
+  g_debug("Accounts SSO: got account signon info response");
 
   if (!tp_str_empty (username))
     {
@@ -360,7 +359,7 @@ _account_created_signon_cb(SignonIdentity *signon,
     }
   else
     {
-      g_debug("UOA has no account name");
+      g_debug("Accounts SSO: has no account name");
     }
 
   g_object_unref (data->service);
@@ -432,7 +431,7 @@ create_account(AgAccountService *service,
           AgAuthData *auth_data = ag_account_service_get_auth_data (service);
           if (!auth_data)
             {
-              DEBUG("UOA account is missing auth data; ignored");
+              DEBUG("Accounts SSO: account is missing auth data; ignored");
               return;
             }
 
@@ -442,7 +441,7 @@ create_account(AgAccountService *service,
           SignonIdentity *signon = signon_identity_new_from_db (cred_id);
           if (!signon)
             {
-              DEBUG("UOA cannot create signon identity from account (cred_id %u); ignored", cred_id);
+              DEBUG("Accounts SSO: cannot create signon identity from account (cred_id %u); ignored", cred_id);
               return;
             }
 
@@ -452,7 +451,7 @@ create_account(AgAccountService *service,
           data->service = g_object_ref (service);
           data->self = self;
 
-          DEBUG("UOA querying account info from signon");
+          DEBUG("Accounts SSO: querying account info from signon");
           signon_identity_query_info(signon, _account_created_signon_cb, data);
           return;
         }
@@ -505,7 +504,7 @@ _account_deleted_cb (AgManager *manager,
       if (account_name == NULL)
         continue;
 
-      DEBUG ("UOA account %s deleted", account_name);
+      DEBUG ("Accounts SSO: account %s deleted", account_name);
 
       g_hash_table_iter_remove (&iter);
       g_signal_emit_by_name (self, "deleted", account_name);
@@ -548,7 +547,7 @@ mcp_account_manager_uoa_dispose (GObject *object)
 static void
 mcp_account_manager_uoa_init (McpAccountManagerUoa *self)
 {
-  DEBUG ("UOA MC plugin initialised");
+  DEBUG ("Accounts SSO: MC plugin initialised");
 
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self,
       MCP_TYPE_ACCOUNT_MANAGER_UOA, McpAccountManagerUoaPrivate);
