@@ -1,4 +1,3 @@
 TEMPLATE = subdirs
 
-SUBDIRS += mcp-account-manager-uoa \
-    telepathy-sasl-signon
+SUBDIRS += mcp-account-manager-uoa
