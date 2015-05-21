@@ -118,46 +118,13 @@ _service_dup_tp_value (AgAccountService *service,
     const gchar *key)
 {
   gchar *real_key = g_strdup_printf (KEY_PREFIX "%s", key);
-  GValue value = { 0, };
-  gchar *ret;
+  GVariant *value;
+  value = ag_account_service_get_variant (service, real_key, NULL);
+  g_free (real_key);
+  if (value == NULL)
+    return NULL;
 
-  g_value_init (&value, G_TYPE_STRING);
-  AgSettingSource re = ag_account_service_get_value (service, real_key, &value);
-  if (re == AG_SETTING_SOURCE_NONE)
-    {
-      /* Retry as int */
-      g_value_unset (&value);
-      g_value_init (&value, G_TYPE_INT);
-      re = ag_account_service_get_value (service, real_key, &value);
-      
-      if (re == AG_SETTING_SOURCE_NONE)
-        {
-          /* Retry as boolean.. */
-          g_value_unset (&value);
-          g_value_init (&value, G_TYPE_BOOLEAN);
-          re = ag_account_service_get_value (service, real_key, &value);
-
-          if (re == AG_SETTING_SOURCE_NONE)
-            {
-              g_value_unset(&value);
-              g_value_init (&value, G_TYPE_STRING);
-            }
-        }
-    }
-
-  if (G_VALUE_TYPE(&value) != G_TYPE_STRING)
-    {
-      GValue tmp = G_VALUE_INIT;
-      _tp_transform_to_string(&value, &tmp);
-      ret = g_value_dup_string (&tmp);
-      g_value_unset(&tmp);
-    }
-  else
-      ret = g_value_dup_string (&value);
-
-  g_value_unset (&value);
-  g_free(real_key);
-  return ret;
+  return g_variant_dup_string(value, NULL);
 }
 
 static void
@@ -169,18 +136,14 @@ _service_set_tp_value (AgAccountService *service,
 
   if (value != NULL)
     {
-      GValue gvalue = { 0, };
-
-      g_value_init (&gvalue, G_TYPE_STRING);
-      g_value_set_string (&gvalue, value);
-      ag_account_service_set_value (service, real_key, &gvalue);
-      g_value_unset (&gvalue);
-      g_free (real_key);
+      GVariant *gvariant = g_variant_new_string (value);
+      ag_account_service_set_variant (service, real_key, gvariant);
     }
   else
     {
-      ag_account_service_set_value (service, real_key, NULL);
+      ag_account_service_set_variant (service, real_key, NULL);
     }
+    g_free(real_key);
 }
 
 /* Returns NULL if the account never has been imported into MC before */
@@ -253,15 +216,20 @@ _service_changed_cb (AgAccountService *service,
 }
 
 static void
-_account_stored_cb (AgAccount *account,
-    const GError *error,
+_account_stored_cb (GObject *source_object,
+    GAsyncResult *res,
     gpointer user_data)
 {
-  if (error != NULL)
+  AgAccount *account = AG_ACCOUNT(source_object);
+  GError *error = NULL;
+
+  if (!ag_account_store_finish (account, res, &error))
     {
+      g_assert (error != NULL);
       DEBUG ("Error storing Accounts SSO account '%s': %s",
           ag_account_get_display_name (account),
           error->message);
+      g_error_free(error);
     }
 }
 
@@ -318,7 +286,7 @@ _account_create(McpAccountManagerUoa *self, AgAccountService *service)
       service_name, account->id);
 
   _service_set_tp_account_name (service, account_name);
-  ag_account_store (account, _account_stored_cb, self);
+  ag_account_store_async (account, NULL, _account_stored_cb, self);
 
   g_debug("Accounts SSO: _account_create: %s", account_name);
 
@@ -353,7 +321,7 @@ _account_created_signon_cb(SignonIdentity *signon,
     {
       /* Must be stored for CMs */
       _service_set_tp_value (data->service, "param-account", username);
-      ag_account_store (data->account, _account_stored_cb, data->self);
+      ag_account_store_async (data->account, NULL, _account_stored_cb, data->self);
 
       _account_create (data->self, data->service);
     }
@@ -734,11 +702,19 @@ account_manager_uoa_get (const McpAccountStorage *storage,
 
   if (key == NULL || !tp_strdiff (key, "Icon"))
     {
-      AgProvider *provider = ag_manager_get_provider (self->priv->manager, ag_account_get_provider_name (account));
+      /* Try loading the icon from service, if that's empty, load the provider */
+      gchar *icon_name = ag_service_get_icon_name (s);
+      if (strlen(icon_name) == 0)
+        {
+          AgProvider *provider = ag_manager_get_provider (self->priv->manager,
+                                                          ag_account_get_provider_name (account));
+          icon_name = ag_provider_get_icon_name (provider);
+          ag_provider_unref(provider);
+        }
       mcp_account_manager_set_value (am, account_name, "Icon",
-          ag_provider_get_icon_name (provider));
-      ag_provider_unref(provider);
+          icon_name);
       handled = TRUE;
+      g_free(icon_name);
     }
 
   /* If it was none of the above, then just lookup in service' settings */
@@ -832,7 +808,7 @@ account_manager_uoa_commit (const McpAccountStorage *storage,
       AgAccountService *service = value;
       AgAccount *account = ag_account_service_get_account (service);
 
-      ag_account_store (account, _account_stored_cb, self);
+      ag_account_store_async (account, NULL, _account_stored_cb, self);
     }
 
   return TRUE;
@@ -933,7 +909,7 @@ account_manager_uoa_get_restrictions (const McpAccountStorage *storage,
   McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
   AgAccountService *service;
   guint restrictions = TP_STORAGE_RESTRICTION_FLAG_CANNOT_SET_SERVICE;
-  GValue value = G_VALUE_INIT;
+  GVariant *value;
 
   g_return_val_if_fail (self->priv->manager != NULL, 0);
 
@@ -942,14 +918,11 @@ account_manager_uoa_get_restrictions (const McpAccountStorage *storage,
   if (service == NULL)
     return G_MAXUINT;
 
-  g_value_init (&value, G_TYPE_BOOLEAN);
-  ag_account_service_get_value (service,
-      KEY_PREFIX KEY_READONLY_PARAMS, &value);
+  value = ag_account_service_get_variant (service,
+      KEY_PREFIX KEY_READONLY_PARAMS, NULL);
 
-  if (g_value_get_boolean (&value))
+  if (value != NULL && g_variant_get_boolean (value))
     restrictions |= TP_STORAGE_RESTRICTION_FLAG_CANNOT_SET_PARAMETERS;
-
-  g_value_unset (&value);
 
   /* FIXME: We can't set Icon either, but there is no flag for that */
   return restrictions;
