@@ -18,50 +18,50 @@
 
 #include <mission-control-plugins/mission-control-plugins.h>
 
-#ifndef __MCP_ACCOUNT_MANAGER_UOA_H__
-#define __MCP_ACCOUNT_MANAGER_UOA_H__
+#ifndef __MCP_ACCOUNT_MANAGER_ACCOUNTS_SSO_H__
+#define __MCP_ACCOUNT_MANAGER_ACCOUNTS_SSO_H__
 
 G_BEGIN_DECLS
 
-#define MCP_TYPE_ACCOUNT_MANAGER_UOA \
-  (mcp_account_manager_uoa_get_type ())
+#define MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO \
+  (mcp_account_manager_accounts_sso_get_type ())
 
-#define MCP_ACCOUNT_MANAGER_UOA(o) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((o), MCP_TYPE_ACCOUNT_MANAGER_UOA,   \
-      McpAccountManagerUoa))
+#define MCP_ACCOUNT_MANAGER_ACCOUNTS_SSO(o) \
+  (G_TYPE_CHECK_INSTANCE_CAST ((o), MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO,   \
+      McpAccountManagerAccountsSso))
 
-#define MCP_ACCOUNT_MANAGER_UOA_CLASS(k)     \
-    (G_TYPE_CHECK_CLASS_CAST((k), MCP_TYPE_ACCOUNT_MANAGER_UOA, \
+#define MCP_ACCOUNT_MANAGER_ACCOUNTS_SSO_CLASS(k)     \
+    (G_TYPE_CHECK_CLASS_CAST((k), MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO, \
         McpAccountManagerUoaClass))
 
-#define MCP_IS_ACCOUNT_MANAGER_UOA(o) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((o), MCP_TYPE_ACCOUNT_MANAGER_UOA))
+#define MCP_IS_ACCOUNT_MANAGER_ACCOUNTS_SSO(o) \
+  (G_TYPE_CHECK_INSTANCE_TYPE ((o), MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO))
 
-#define MCP_IS_ACCOUNT_MANAGER_UOA_CLASS(k)  \
-  (G_TYPE_CHECK_CLASS_TYPE ((k), MCP_TYPE_ACCOUNT_MANAGER_UOA))
+#define MCP_IS_ACCOUNT_MANAGER_ACCOUNTS_SSO_CLASS(k)  \
+  (G_TYPE_CHECK_CLASS_TYPE ((k), MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO))
 
-#define MCP_ACCOUNT_MANAGER_UOA_GET_CLASS(o) \
-    (G_TYPE_INSTANCE_GET_CLASS ((o), MCP_TYPE_ACCOUNT_MANAGER_UOA, \
+#define MCP_ACCOUNT_MANAGER_ACCOUNTS_SSO_GET_CLASS(o) \
+    (G_TYPE_INSTANCE_GET_CLASS ((o), MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO, \
         McpAccountManagerUoaClass))
 
-typedef struct _McpAccountManagerUoaPrivate McpAccountManagerUoaPrivate;
+typedef struct _McpAccountManagerAccountsSsoPrivate McpAccountManagerAccountsSsoPrivate;
 
 typedef struct {
   GObject parent;
 
-  McpAccountManagerUoaPrivate *priv;
-} _McpAccountManagerUoa;
+  McpAccountManagerAccountsSsoPrivate *priv;
+} _McpAccountManagerAccountsSso;
 
 typedef struct {
   GObjectClass parent_class;
-} _McpAccountManagerUoaClass;
+} _McpAccountManagerAccountsSsoClass;
 
-typedef _McpAccountManagerUoa McpAccountManagerUoa;
-typedef _McpAccountManagerUoaClass McpAccountManagerUoaClass;
+typedef _McpAccountManagerAccountsSso McpAccountManagerAccountsSso;
+typedef _McpAccountManagerAccountsSsoClass McpAccountManagerAccountsSsoClass;
 
-GType mcp_account_manager_uoa_get_type (void) G_GNUC_CONST;
+GType mcp_account_manager_accounts_sso_get_type (void) G_GNUC_CONST;
 
-McpAccountManagerUoa *mcp_account_manager_uoa_new (void);
+McpAccountManagerAccountsSso *mcp_account_manager_accounts_sso_new (void);
 
 G_END_DECLS
 

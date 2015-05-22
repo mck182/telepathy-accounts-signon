@@ -50,14 +50,14 @@
 #define KEY_READONLY_PARAMS "mc-readonly-params"
 
 static void account_storage_iface_init (McpAccountStorageIface *iface);
-static void create_account(AgAccountService *service, McpAccountManagerUoa *self);
+static void create_account(AgAccountService *service, McpAccountManagerAccountsSso *self);
 
-G_DEFINE_TYPE_WITH_CODE (McpAccountManagerUoa, mcp_account_manager_uoa,
+G_DEFINE_TYPE_WITH_CODE (McpAccountManagerAccountsSso, mcp_account_manager_accounts_sso,
     G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (MCP_TYPE_ACCOUNT_STORAGE,
         account_storage_iface_init));
 
-struct _McpAccountManagerUoaPrivate
+struct _McpAccountManagerAccountsSsoPrivate
 {
   McpAccountManager *am;
 
@@ -163,7 +163,7 @@ _service_set_tp_account_name (AgAccountService *service,
 static void
 _service_enabled_cb (AgAccountService *service,
     gboolean enabled,
-    McpAccountManagerUoa *self)
+    McpAccountManagerAccountsSso *self)
 {
   gchar *account_name = _service_dup_tp_account_name (service);
   GList *node;
@@ -198,7 +198,7 @@ _service_enabled_cb (AgAccountService *service,
 
 static void
 _service_changed_cb (AgAccountService *service,
-    McpAccountManagerUoa *self)
+    McpAccountManagerAccountsSso *self)
 {
   gchar *account_name = _service_dup_tp_account_name (service);
 
@@ -234,7 +234,7 @@ _account_stored_cb (GObject *source_object,
 }
 
 static gboolean
-_add_service (McpAccountManagerUoa *self,
+_add_service (McpAccountManagerAccountsSso *self,
     AgAccountService *service,
     const gchar *account_name)
 {
@@ -254,7 +254,7 @@ _add_service (McpAccountManagerUoa *self,
 }
 
 static void
-_account_create(McpAccountManagerUoa *self, AgAccountService *service)
+_account_create(McpAccountManagerAccountsSso *self, AgAccountService *service)
 {
   AgAccount *account = ag_account_service_get_account (service);
   gchar *cm_name = _service_dup_tp_value (service, "manager");
@@ -303,7 +303,7 @@ typedef struct
 {
     AgAccount *account;
     AgAccountService *service;
-    McpAccountManagerUoa *self;
+    McpAccountManagerAccountsSso *self;
 } AccountCreateData;
 
 static void
@@ -338,7 +338,7 @@ _account_created_signon_cb(SignonIdentity *signon,
 static void
 _account_created_cb (AgManager *manager,
     AgAccountId id,
-    McpAccountManagerUoa *self)
+    McpAccountManagerAccountsSso *self)
 {
   GList *l;
   AgAccount *account = ag_manager_get_account (self->priv->manager, id);
@@ -383,7 +383,7 @@ _account_created_cb (AgManager *manager,
 
 static void
 create_account(AgAccountService *service,
-    McpAccountManagerUoa *self)
+    McpAccountManagerAccountsSso *self)
 {
   gchar *account_name = _service_dup_tp_account_name (service);
 
@@ -441,7 +441,7 @@ create_account(AgAccountService *service,
 static void
 _account_deleted_cb (AgManager *manager,
     AgAccountId id,
-    McpAccountManagerUoa *self)
+    McpAccountManagerAccountsSso *self)
 {
   GHashTableIter iter;
   gpointer value;
@@ -498,9 +498,9 @@ _account_deleted_cb (AgManager *manager,
 }
 
 static void
-mcp_account_manager_uoa_dispose (GObject *object)
+mcp_account_manager_accounts_sso_dispose (GObject *object)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) object;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) object;
 
   tp_clear_object (&self->priv->am);
   tp_clear_object (&self->priv->manager);
@@ -509,16 +509,16 @@ mcp_account_manager_uoa_dispose (GObject *object)
   g_list_free_full (self->priv->pending_accounts, g_object_unref);
   self->priv->pending_accounts = NULL;
 
-  G_OBJECT_CLASS (mcp_account_manager_uoa_parent_class)->dispose (object);
+  G_OBJECT_CLASS (mcp_account_manager_accounts_sso_parent_class)->dispose (object);
 }
 
 static void
-mcp_account_manager_uoa_init (McpAccountManagerUoa *self)
+mcp_account_manager_accounts_sso_init (McpAccountManagerAccountsSso *self)
 {
   DEBUG ("Accounts SSO: MC plugin initialised");
 
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self,
-      MCP_TYPE_ACCOUNT_MANAGER_UOA, McpAccountManagerUoaPrivate);
+      MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO, McpAccountManagerAccountsSsoPrivate);
 
   self->priv->accounts = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, g_object_unref);
@@ -535,18 +535,18 @@ mcp_account_manager_uoa_init (McpAccountManagerUoa *self)
 }
 
 static void
-mcp_account_manager_uoa_class_init (McpAccountManagerUoaClass *klass)
+mcp_account_manager_accounts_sso_class_init (McpAccountManagerAccountsSsoClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-  gobject_class->dispose = mcp_account_manager_uoa_dispose;
+  gobject_class->dispose = mcp_account_manager_accounts_sso_dispose;
 
   g_type_class_add_private (gobject_class,
-      sizeof (McpAccountManagerUoaPrivate));
+      sizeof (McpAccountManagerAccountsSsoPrivate));
 }
 
 static void
-_ensure_loaded (McpAccountManagerUoa *self)
+_ensure_loaded (McpAccountManagerAccountsSso *self)
 {
   GList *services;
 
@@ -592,10 +592,10 @@ _ensure_loaded (McpAccountManagerUoa *self)
 }
 
 static GList *
-account_manager_uoa_list (const McpAccountStorage *storage,
+account_manager_accounts_sso_list (const McpAccountStorage *storage,
     const McpAccountManager *am)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   GList *accounts = NULL;
   GHashTableIter iter;
   gpointer key;
@@ -625,12 +625,12 @@ provider_to_tp_service_name (const gchar *provider_name)
 }
 
 static gboolean
-account_manager_uoa_get (const McpAccountStorage *storage,
+account_manager_accounts_sso_get (const McpAccountStorage *storage,
     const McpAccountManager *am,
     const gchar *account_name,
     const gchar *key)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   AgAccountService *service;
   AgAccount *account;
   AgService *s;
@@ -730,13 +730,13 @@ account_manager_uoa_get (const McpAccountStorage *storage,
 }
 
 static gboolean
-account_manager_uoa_set (const McpAccountStorage *storage,
+account_manager_accounts_sso_set (const McpAccountStorage *storage,
     const McpAccountManager *am,
     const gchar *account_name,
     const gchar *key,
     const gchar *val)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   AgAccountService *service;
   AgAccount *account;
 
@@ -770,7 +770,7 @@ account_manager_uoa_set (const McpAccountStorage *storage,
 }
 
 static gchar *
-account_manager_uoa_create (const McpAccountStorage *storage,
+account_manager_accounts_sso_create (const McpAccountStorage *storage,
     const McpAccountManager *am,
     const gchar *cm_name,
     const gchar *protocol_name,
@@ -782,7 +782,7 @@ account_manager_uoa_create (const McpAccountStorage *storage,
 }
 
 static gboolean
-account_manager_uoa_delete (const McpAccountStorage *storage,
+account_manager_accounts_sso_delete (const McpAccountStorage *storage,
     const McpAccountManager *am,
     const gchar *account_name,
     const gchar *key)
@@ -791,10 +791,10 @@ account_manager_uoa_delete (const McpAccountStorage *storage,
 }
 
 static gboolean
-account_manager_uoa_commit (const McpAccountStorage *storage,
+account_manager_accounts_sso_commit (const McpAccountStorage *storage,
     const McpAccountManager *am)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   GHashTableIter iter;
   gpointer value;
 
@@ -816,10 +816,10 @@ account_manager_uoa_commit (const McpAccountStorage *storage,
 
 
 static void
-account_manager_uoa_ready (const McpAccountStorage *storage,
+account_manager_accounts_sso_ready (const McpAccountStorage *storage,
     const McpAccountManager *am)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   DelayedSignalData *data;
 
   g_return_if_fail (self->priv->manager != NULL);
@@ -855,11 +855,11 @@ account_manager_uoa_ready (const McpAccountStorage *storage,
 }
 
 static void
-account_manager_uoa_get_identifier (const McpAccountStorage *storage,
+account_manager_accounts_sso_get_identifier (const McpAccountStorage *storage,
     const gchar *account_name,
     GValue *identifier)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   AgAccountService *service;
   AgAccount *account;
 
@@ -876,10 +876,10 @@ account_manager_uoa_get_identifier (const McpAccountStorage *storage,
 }
 
 static GHashTable *
-account_manager_uoa_get_additional_info (const McpAccountStorage *storage,
+account_manager_accounts_sso_get_additional_info (const McpAccountStorage *storage,
     const gchar *account_name)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   AgAccountService *service;
   AgAccount *account;
   AgProvider *provider;
@@ -903,10 +903,10 @@ account_manager_uoa_get_additional_info (const McpAccountStorage *storage,
 }
 
 static guint
-account_manager_uoa_get_restrictions (const McpAccountStorage *storage,
+account_manager_accounts_sso_get_restrictions (const McpAccountStorage *storage,
     const gchar *account_name)
 {
-  McpAccountManagerUoa *self = (McpAccountManagerUoa *) storage;
+  McpAccountManagerAccountsSso *self = (McpAccountManagerAccountsSso *) storage;
   AgAccountService *service;
   guint restrictions = TP_STORAGE_RESTRICTION_FLAG_CANNOT_SET_SERVICE;
   GVariant *value;
@@ -936,7 +936,7 @@ account_storage_iface_init (McpAccountStorageIface *iface)
   iface->priority = PLUGIN_PRIORITY;
   iface->provider = PLUGIN_PROVIDER;
 
-#define IMPLEMENT(x) iface->x = account_manager_uoa_##x
+#define IMPLEMENT(x) iface->x = account_manager_accounts_sso_##x
   IMPLEMENT (get);
   IMPLEMENT (list);
   IMPLEMENT (set);
@@ -950,8 +950,8 @@ account_storage_iface_init (McpAccountStorageIface *iface)
 #undef IMPLEMENT
 }
 
-McpAccountManagerUoa *
-mcp_account_manager_uoa_new (void)
+McpAccountManagerAccountsSso *
+mcp_account_manager_accounts_sso_new (void)
 {
-  return g_object_new (MCP_TYPE_ACCOUNT_MANAGER_UOA, NULL);
+  return g_object_new (MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO, NULL);
 }

@@ -35,7 +35,7 @@ mcp_plugin_ref_nth_object (guint n)
     {
       case 0:
         if (plugin_0 == NULL)
-          plugin_0 = g_object_new (MCP_TYPE_ACCOUNT_MANAGER_UOA, NULL);
+          plugin_0 = g_object_new (MCP_TYPE_ACCOUNT_MANAGER_ACCOUNTS_SSO, NULL);
         else
           g_object_ref (plugin_0);
 
