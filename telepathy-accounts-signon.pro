@@ -1,3 +1,3 @@
 TEMPLATE = subdirs
 
-SUBDIRS += mcp-account-manager-uoa
+SUBDIRS += mcp-account-manager-accounts-sso

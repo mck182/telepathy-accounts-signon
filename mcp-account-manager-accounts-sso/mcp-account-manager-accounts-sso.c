@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "mcp-account-manager-uoa.h"
+#include "mcp-account-manager-accounts-sso.h"
 
 #include <telepathy-glib/telepathy-glib.h>
 

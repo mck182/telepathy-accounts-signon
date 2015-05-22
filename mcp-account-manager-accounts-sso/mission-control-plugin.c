@@ -24,7 +24,7 @@
 
 #include <mission-control-plugins/mission-control-plugins.h>
 
-#include "mcp-account-manager-uoa.h"
+#include "mcp-account-manager-accounts-sso.h"
 
 GObject *
 mcp_plugin_ref_nth_object (guint n)
