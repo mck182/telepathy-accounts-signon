@@ -91,26 +91,28 @@ typedef struct {
   AgAccountId account_id;
 } DelayedSignalData;
 
-static gboolean
-_tp_transform_to_string(const GValue *src, GValue *dst)
+static gchar *
+_tp_transform_to_string(GVariant *src)
 {
-  g_value_init(dst, G_TYPE_STRING);
-  gboolean ret = FALSE;
-
-  if (G_VALUE_TYPE(src) == G_TYPE_BOOLEAN)
+  if (g_variant_is_of_type (src, G_VARIANT_TYPE_BOOLEAN))
     {
-      if (g_value_get_boolean(src))
-          g_value_set_static_string(dst, "true");
+      if (g_variant_get_boolean (src))
+        return g_strdup("true");
       else
-          g_value_set_static_string(dst, "false");
-      ret = TRUE;
+        return g_strdup ("false");
+    }
+  else if (g_variant_is_of_type(src, G_VARIANT_TYPE_STRING) ||
+           g_variant_is_of_type(src, G_VARIANT_TYPE_OBJECT_PATH) ||
+           g_variant_is_of_type(src, G_VARIANT_TYPE_SIGNATURE))
+    {
+      return g_variant_dup_string(src, NULL);
     }
   else
     {
-      ret = g_value_transform(src, dst);
+      DEBUG("VARIANT TYPE: %s", g_variant_get_type_string(src));
     }
 
-  return ret;
+  return NULL;
 }
 
 static gchar *
@@ -652,28 +654,16 @@ account_manager_accounts_sso_get (const McpAccountStorage *storage,
     {
       AgAccountSettingIter iter;
       const gchar *k;
-      const GValue *v;
+      GVariant *v;
 
       ag_account_service_settings_iter_init (service, &iter, KEY_PREFIX);
-      while (ag_account_service_settings_iter_next (&iter, &k, &v))
+      while (ag_account_settings_iter_get_next (&iter, &k, &v))
         {
-          if (!G_VALUE_HOLDS_STRING (v))
+          gchar *value = _tp_transform_to_string (v);
+          if (value)
             {
-              GValue strv = G_VALUE_INIT;
-              if (!_tp_transform_to_string(v, &strv))
-                {
-                  g_value_unset(&strv);
-                  continue;
-                }
-
-              mcp_account_manager_set_value (am, account_name,
-                  k, g_value_get_string (&strv));
-              g_value_unset(&strv);
-            }
-          else
-            {
-              mcp_account_manager_set_value (am, account_name,
-                  k, g_value_get_string (v));
+              mcp_account_manager_set_value (am, account_name, k, value);
+              g_free (value);
             }
         }
     }
@@ -703,7 +693,7 @@ account_manager_accounts_sso_get (const McpAccountStorage *storage,
   if (key == NULL || !tp_strdiff (key, "Icon"))
     {
       /* Try loading the icon from service, if that's empty, load the provider */
-      gchar *icon_name = ag_service_get_icon_name (s);
+      const gchar *icon_name = ag_service_get_icon_name (s);
       if (strlen(icon_name) == 0)
         {
           AgProvider *provider = ag_manager_get_provider (self->priv->manager,
@@ -714,7 +704,6 @@ account_manager_accounts_sso_get (const McpAccountStorage *storage,
       mcp_account_manager_set_value (am, account_name, "Icon",
           icon_name);
       handled = TRUE;
-      g_free(icon_name);
     }
 
   /* If it was none of the above, then just lookup in service' settings */
@@ -813,7 +802,6 @@ account_manager_accounts_sso_commit (const McpAccountStorage *storage,
 
   return TRUE;
 }
-
 
 static void
 account_manager_accounts_sso_ready (const McpAccountStorage *storage,
