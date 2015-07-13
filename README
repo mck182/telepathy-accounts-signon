@@ -1,8 +1,3 @@
-A mission control plugin for Telepathy, integrating with libaccounts and libsignon
-to provide IM accounts and authentication. This code is based on Nemo Mobile's
-fork of the plugin from Empathy's ubuntu-online-account support.
+This project has now moved to Gitlab together with the rest of Accounts SSO project.
 
-This code has been updated to not use deprecated methods and adds latest changes
-from Empathy's source tree.
-
-qmake is used for build as a convenience. There is no other Qt dependency at present.
+Please follow https://gitlab.com/accounts-sso/telepathy-accounts-signon/
